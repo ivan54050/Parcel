@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Посилки з рейсами</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 480px;
+    margin: auto;
+    padding: 10px;
+    background: #f5f7fa;
+    color: #222;
+  }
+  h1, h2 {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  label {
+    display: block;
+    margin-top: 12px;
+    font-weight: bold;
+  }
+  input, select, textarea, button {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    border-radius: 5px;
+    border: 1px solid #bbb;
+    font-size: 1rem;
+  }
+  button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    margin-top: 15px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #0056b3;
+  }
+  .secondary {
+    background-color: #28a745;
+    margin-top: 10px;
+  }
+  .list-container {
+    margin-top: 20px;
+  }
+  .trip-item, .parcel-item {
+    background: white;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.1);
+  }
+  .flex-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .flex-row > div {
+    flex: 1;
+  }
+  .flex-row > div + div {
+    margin-left: 8px;
+  }
+  .small-button {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    border-radius: 4px;
+  }
+  .small-button.delete {
+    background: #dc3545;
+  }
+  .small-button.edit {
+    background: #ffc107;
+    color: #222;
+  }
+  .volume-inputs label {
+    font-weight: normal;
+    margin-top: 8px;
+  }
+  .volume-inputs input {
+    margin-top: 4px;
+  }
+  .hidden {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>Посилки з рейсами</h1>
+
+<!-- Крок 1: Створення рейсу -->
+<section id="tripSection">
+  <h2>Рейси</h2>
+  <form id="tripForm">
+    <label for="tripName">Назва рейсу *</label>
+    <input id="tripName" type="text" placeholder="Наприклад: Рейс Гамбург 22.07" required />
+    <button type="submit">Додати рейс</button>
+  </form>
+
+  <div id="tripList" class="list-container"></div>
+</section>
+
+<!-- Крок 2: Посилки (приховано поки немає вибору) -->
+<section id="parcelSection" class="hidden">
+  <h2>Посилки для рейсу: <span id="currentTripName"></span></h2>
+
+  <form id="parcelForm">
+    <label for="parcelNumber">Номер посилки *</label>
+    <input id="parcelNumber" type="text" required placeholder="ABC123456789" />
+
+    <label for="weight">Вага (кг) *</label>
+    <input id="weight" type="number" step="0.01" min="0" required />
+
+    <label for="placesCount">Кількість місць *</label>
+    <input id="placesCount" type="number" min="1" step="1" value="1" required />
+
+    <div id="volumeWeightsContainer" class="volume-inputs"></div>
+
+    <label for="receiverName">Отримувач *</label>
+    <input id="receiverName" type="text" required />
+
+    <label for="city">Місто *</label>
+    <input id="city" type="text" required />
+
+    <label for="npBranch">Відділення Нової Пошти *</label>
+    <input id="npBranch" type="text" required />
+
+    <label for="receiverPhone">Телефон *</label>
+    <input id="receiverPhone" type="text" required />
+
+    <label for="priceEuro">Вартість (€) *</label>
+    <input id="priceEuro" type="number" step="0.01" min="0" required />
+
+    <label for="description">Опис</label>
+    <textarea id="description" rows="2"></textarea>
+
+    <input type="hidden" id="editingParcelId" value="">
+
+    <button type="submit">Додати посилку</button>
+  </form>
+
+  <button id="backToTrips" class="secondary">Повернутися до рейсів</button>
+
+  <div id="parcelList" class="list-container"></div>
+</section>
+
+<script type="module">
+  // Firebase imports (скрипти можна завантажити в head або тут)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    doc,
+    updateDoc,
+    deleteDoc,
+    onSnapshot,
+    query,
+    where,
+  } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-firestore.js";
+
+  // Firebase config - вставте свої дані
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // --- DOM Elements ---
+  const tripForm = document.getElementById("tripForm");
+  const tripNameInput = document.getElementById("tripName");
+  const tripListDiv = document.getElementById("tripList");
+
+  const parcelSection = document.getElementById("parcelSection");
+  const currentTripNameSpan = document.getElementById("currentTripName");
+  const parcelForm = document.getElementById("parcelForm");
+  const parcelNumberInput = document.getElementById("parcelNumber");
+  const weightInput = document.getElementById("weight");
+  const placesCountInput = document.getElementById("placesCount");
+  const volumeWeightsContainer = document.getElementById("volumeWeightsContainer");
+  const receiverNameInput = document.getElementById("receiverName");
+  const cityInput = document.getElementById("city");
+  const npBranchInput = document.getElementById("npBranch");
+  const receiverPhoneInput = document.getElementById("receiverPhone");
+  const priceEuroInput = document.getElementById("priceEuro");
+  const descriptionInput = document.getElementById("description");
+  const editingParcelIdInput = document.getElementById("editingParcelId");
+  const parcelListDiv = document.getElementById("parcelList");
+  const backToTripsBtn = document.getElementById("backToTrips");
+
+  // Стан
+  let currentTrip = null;
+
+  // Функція для відображення input-ів об’ємної ваги залежно від кількості місць
+  function updateVolumeInputs() {
+    const count = parseInt(placesCountInput.value) || 1;
+    volumeWeightsContainer.innerHTML = "";
+    for (let i = 0; i < count; i++) {
+      const label = document.createElement("label");
+      label.textContent = `Об’ємна вага місця #${i + 1} (кг) *`;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.step = "0.01";
+      input.required = true;
+      input.name = "volumeWeight";
+      volumeWeightsContainer.appendChild(label);
+      volumeWeightsContainer.appendChild(input);
+    }
+  }
+
+  placesCountInput.addEventListener("input", updateVolumeInputs);
+  updateVolumeInputs();
+
+  // --- Функції для роботи з Firestore ---
+
+  // Додавання рейсу
+  tripForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = tripNameInput.value.trim();
+    if (!name) return alert("Введіть назву рейсу");
+    try {
+      await addDoc(collection(db, "trips"), { name, createdAt: Date.now() });
+      tripNameInput.value = "";
+    } catch (err) {
+      alert("Помилка при додаванні рейсу");
+      console.error(err);
+    }
+  });
+
+  // Відображення списку рейсів
+  function renderTrips(trips) {
+    tripListDiv.innerHTML = "";
+    if (trips.length === 0) {
+      tripListDiv.textContent = "Рейсів поки немає";
+      return;
+    }
+    trips.forEach(({ id, name }) => {
+      const div = document.createElement("div");
+      div.className = "trip-item flex-row";
+
+      const nameDiv = document.createElement("div");
+      nameDiv.textContent = name;
+
+      const selectBtn = document.createElement("button");
+      selectBtn.textContent = "Відкрити";
+      selectBtn.className = "small-button";
+      selectBtn.onclick = () => {
+        currentTrip = { id, name };
+        showParcelSection();
+      };
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "Видалити";
+      deleteBtn.className = "small-button delete";
+      deleteBtn.onclick = async () => {
+        if (confirm(`Видалити рейс "${name}"? Це також видалить усі посилки в ньому.`)) {
+          try {
+            // Видалити всі посилки цього рейсу
+            const parcelsSnapshot = await getDocs(query(collection(db, "parcels"), where("tripId", "==", id)));
+            const batch = db.batch ? db.batch() : null; // batch may not be supported in some versions
+            if(batch) {
+              parcelsSnapshot.forEach(docSnap => batch.delete(doc(db, "parcels", docSnap.id)));
+              batch.delete(doc(db, "trips", id));
+              await batch.commit();
+            } else {
+              // Якщо batch неможливий, видалити по черзі
+              for(const docSnap of parcelsSnapshot.docs) {
+                await deleteDoc(doc(db, "parcels", docSnap.id));
+              }
+              await deleteDoc(doc(db, "trips", id));
+            }
+          } catch (e) {
+            alert("Помилка при видаленні");
+            console.error(e);
+          }
+        }
+      };
+
+      div.appendChild(nameDiv);
+      div.appendChild(selectBtn);
+      div.appendChild(deleteBtn);
+
+      tripListDiv.appendChild(div);
+    });
+  }
+
+  // Слухач на колекцію рейсів
+  const tripsCol = collection(db, "trips");
+  onSnapshot(tripsCol, (snapshot) => {
+    const trips = [];
+    snapshot.forEach(doc => trips.push({ id: doc.id, ...doc.data() }));
+    renderTrips(trips);
+  });
+
+  // --- Робота з посилками ---
+
+  // Показати секцію посилок
+  function showParcelSection() {
+    currentTripNameSpan.textContent = currentTrip.name;
+    parcelSection.classList.remove("hidden");
+    document.getElementById("tripSection").classList.add("hidden");
+    loadParcels();
+  }
+
+  // Повернутися до списку рейсів
+  backToTripsBtn.onclick = () => {
+    parcelSection.classList.add("hidden");
+    document.getElementById("tripSection").classList.remove("hidden");
+    currentTrip = null;
+    clearParcelForm();
+    parcelListDiv.innerHTML = "";
+  };
+
+  // Відобразити список посилок для поточного рейсу
+  async function loadParcels() {
+    if (!currentTrip) return;
+    const q = query(collection(db, "parcels"), where("tripId", "==", currentTrip.id));
+    const snapshot = await getDocs(q);
+    const parcels = [];
+    snapshot.forEach(doc => parcels.push({ id: doc.id, ...doc.data() }));
+    renderParcels(parcels);
+  }
+
+  function renderParcels(parcels) {
+    parcelListDiv.innerHTML = "";
+    if (parcels.length === 0) {
+      parcelListDiv.textContent = "Посилок поки немає";
+      return;
+    }
+
+    parcels.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "parcel-item";
+
+      const volumeWeightsStr = p.volumeWeights ? p.volumeWeights.map(w => w.toFixed(2)).join(", ") : "";
+
+      div.innerHTML = `
+        <div><strong>№ посилки:</strong> ${p.number}</div>
+        <div><strong>Вага:</strong> ${p.weight.toFixed(2)} кг</div>
+        <div><strong>Кількість місць:</strong> ${p.placesCount}</div>
+        <div><strong>Об’ємна вага (кг):</strong> ${volumeWeightsStr}</div>
+        <div><strong>Отримувач:</strong> ${p.receiverName}</div>
+        <div><strong>Місто:</strong> ${p.city}</div>
+        <div><strong>Відділення НП:</strong> ${p.npBranch}</div>
+        <div><strong>Телефон:</strong> ${p.receiverPhone}</div>
+        <div><strong>Ціна (€):</strong> ${p.priceEuro.toFixed(2)}</div>
+        <div><strong>Опис:</strong> ${p.description || "-"}</div>
+      `;
+
+      const btnEdit = document.createElement("button");
+      btnEdit.textContent = "Редагувати";
+      btnEdit.className = "small-button edit";
+      btnEdit.onclick = () => fillParcelForm(p);
+
+      const btnDelete = document.createElement("button");
+      btnDelete.textContent = "Видалити";
+      btnDelete.className = "small-button delete";
+      btnDelete.onclick = async () => {
+        if (confirm(`Видалити посилку №${p.number}?`)) {
+          try {
+            await deleteDoc(doc(db, "parcels", p.id));
+            loadParcels();
+          } catch (e) {
+            alert("Помилка при видаленні");
+            console.error(e);
+          }
+        }
+      };
+
+      const actionsDiv = document.createElement("div");
+      actionsDiv.style.marginTop = "8px";
+      actionsDiv.appendChild(btnEdit);
+      actionsDiv.appendChild(btnDelete);
+
+      div.appendChild(actionsDiv);
+      parcelListDiv.appendChild(div);
+    });
+  }
+
+  // Заповнити форму для редагування посилки
+  function fillParcelForm(parcel) {
+    editingParcelIdInput.value = parcel.id;
+    parcelNumberInput.value = parcel.number;
+    weightInput.value = parcel.weight;
+    placesCountInput.value = parcel.placesCount;
+    updateVolumeInputs();
+    setTimeout(() => {
+      const inputs = volumeWeightsContainer.querySelectorAll('input[name="volumeWeight"]');
+      parcel.volumeWeights.forEach((w, i) => {
+        if (inputs[i]) inputs[i].value = w;
+      });
+    }, 0);
+    receiverNameInput.value = parcel.receiverName;
+    cityInput.value = parcel.city;
+    npBranchInput.value = parcel.npBranch;
+    receiverPhoneInput.value = parcel.receiverPhone;
+    priceEuroInput.value = parcel.priceEuro;
+    descriptionInput.value = parcel.description || "";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Очистити форму посилки
+  function clearParcelForm() {
+    editingParcelIdInput.value = "";
+    parcelForm.reset();
+    updateVolumeInputs();
+  }
+
+  // Додавання/редагування посилки
+  parcelForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentTrip) return alert("Оберіть рейс!");
+
+    const parcelId = editingParcelIdInput.value;
+    const number = parcelNumberInput.value.trim();
+    const weight = parseFloat(weightInput.value);
+    const placesCount = parseInt(placesCountInput.value);
+    const volumeInputs = volumeWeightsContainer.querySelectorAll('input[name="volumeWeight"]');
+    const volumeWeights = Array.from(volumeInputs).map(i => parseFloat(i.value));
+    const receiverName = receiverNameInput.value.trim();
+    const city = cityInput.value.trim();
+    const npBranch = npBranchInput.value.trim();
+    const receiverPhone = receiverPhoneInput.value.trim();
+    const priceEuro = parseFloat(priceEuroInput.value);
+    const description = descriptionInput.value.trim();
+
+    if (volumeWeights.length !== placesCount || volumeWeights.some(isNaN)) {
+      return alert("Заповніть всі обʼємні ваги коректно");
+    }
+    if(!number || !weight || !placesCount || !receiverName || !city || !npBranch || !receiverPhone || isNaN(priceEuro)) {
+      return alert("Будь ласка, заповніть всі обов’язкові поля");
+    }
+
+    try {
+      if (parcelId) {
+        // редагування
+        const parcelRef = doc(db, "parcels", parcelId);
+        await updateDoc(parcelRef, {
+          number,
+          weight,
+          placesCount,
+          volumeWeights,
+          receiverName,
+          city,
+         
