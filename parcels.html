@@ -3,124 +3,92 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ParcelApp - Посилки</title>
+<title>Посилки рейсу ParcelApp</title>
 <style>
   body {
     font-family: Arial, sans-serif;
     max-width: 480px;
-    margin: 0 auto;
+    margin: 10px auto;
+    background: #f0f0f0;
     padding: 10px;
-    background: #f5f8fa;
-    color: #333;
   }
-  h1 {
-    text-align: center;
+  h1, h2 {
     color: #007bff;
-    margin-bottom: 15px;
+    text-align: center;
   }
-  form, .parcel-item {
+  form, .parcel {
     background: white;
-    padding: 15px;
+    padding: 12px;
     margin-bottom: 10px;
-    border-radius: 8px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    border-radius: 6px;
   }
-  label {
-    display: block;
-    margin-top: 10px;
-    font-weight: 600;
-  }
-  input, textarea {
+  input[type=text], input[type=number], textarea {
     width: 100%;
     padding: 8px;
-    margin-top: 5px;
     box-sizing: border-box;
+    font-size: 16px;
+    margin-top: 6px;
     border-radius: 4px;
-    border: 1px solid #ccc;
   }
   button {
-    margin-top: 12px;
-    padding: 12px;
+    margin-top: 8px;
     width: 100%;
-    border: none;
+    padding: 10px;
+    font-size: 16px;
     background: #007bff;
     color: white;
-    font-size: 16px;
+    border: none;
     border-radius: 6px;
     cursor: pointer;
   }
   button:hover {
     background: #0056b3;
   }
-  .btn-small {
-    width: auto;
-    padding: 6px 12px;
-    font-size: 14px;
-    margin-left: 5px;
-    border-radius: 4px;
-  }
-  .btn-edit { background: #28a745; }
-  .btn-delete { background: #dc3545; }
-  .parcel-header {
+  .parcel-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
   .parcel-number {
-    font-weight: 700;
+    font-weight: bold;
     font-size: 16px;
   }
-  @media (max-width: 480px) {
-    body { padding: 8px; }
-    button { font-size: 14px; }
+  .btn {
+    padding: 6px 10px;
+    margin-left: 6px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
   }
+  .btn-delete { background: #dc3545; color: white; }
 </style>
 </head>
 <body>
 
 <h1>Посилки рейсу</h1>
-<p id="routeTitle"></p>
+<h2 id="routeName">Завантаження...</h2>
 
-<form id="formCreateParcel">
-  <label for="number">Номер посилки *</label>
-  <input id="number" type="text" required autocomplete="off" />
-
-  <label for="weight">Вага (кг) *</label>
-  <input id="weight" type="number" step="0.01" min="0" required />
-
-  <label for="count">Кількість місць *</label>
-  <input id="count" type="number" min="1" value="1" required />
-
-  <div id="volumes"></div>
-
-  <label for="city">Місто *</label>
-  <input id="city" type="text" required />
-
-  <label for="branch">Відділення Нової Пошти *</label>
-  <input id="branch" type="text" required />
-
-  <label for="phone">Телефон *</label>
-  <input id="phone" type="text" required />
-
-  <label for="price">Ціна (€) *</label>
-  <input id="price" type="number" step="0.01" min="0" required />
-
-  <label for="recipient">Отримувач</label>
-  <input id="recipient" type="text" />
-
-  <label for="desc">Опис</label>
-  <textarea id="desc" rows="2"></textarea>
-
-  <button type="submit">Додати посилку</button>
+<form id="formAddParcel">
+  <input type="text" id="number" placeholder="Номер посилки *" required />
+  <input type="number" step="0.01" id="weight" placeholder="Вага (кг) *" required min="0" />
+  <input type="number" id="count" placeholder="Кількість місць *" value="1" min="1" required />
+  <input type="text" id="city" placeholder="Місто *" required />
+  <input type="text" id="branch" placeholder="Відділення Нової Пошти *" required />
+  <input type="text" id="phone" placeholder="Телефон *" required />
+  <input type="number" step="0.01" id="price" placeholder="Ціна (€) *" min="0" required />
+  <input type="text" id="recipient" placeholder="Отримувач" />
+  <textarea id="desc" placeholder="Опис"></textarea>
+  <button type="submit">Додати Посилку</button>
 </form>
 
-<div id="parcelsContainer">
-  <p>Завантаження посилок...</p>
-</div>
+<div id="parcelsList">Завантаження...</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import {
+  getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBjLuotxHzCIkSLduDlLb3AYTc6A6A8NYc",
@@ -138,18 +106,64 @@ const db = getFirestore(app);
 const urlParams = new URLSearchParams(window.location.search);
 const routeId = urlParams.get('routeId');
 
-const routeTitle = document.getElementById('routeTitle');
-const formCreateParcel = document.getElementById('formCreateParcel');
-const parcelsContainer = document.getElementById('parcelsContainer');
+const routeNameEl = document.getElementById('routeName');
+const formAddParcel = document.getElementById('formAddParcel');
+const parcelsList = document.getElementById('parcelsList');
 
-const countInput = document.getElementById('count');
-const volumesDiv = document.getElementById('volumes');
+async function loadRouteName() {
+  if (!routeId) {
+    routeNameEl.textContent = 'Рейс не знайдено';
+    return;
+  }
+  const docSnap = await getDocs(collection(db, 'routes'));
+  const routeDoc = await doc(db, 'routes', routeId);
+  try {
+    const routeData = (await routeDoc.get()).data();
+    routeNameEl.textContent = routeData?.name || 'Рейс';
+  } catch {
+    routeNameEl.textContent = 'Рейс';
+  }
+}
 
-function renderVolumeInputs(count) {
-  volumesDiv.innerHTML = '';
-  for (let i = 0; i < count; i++) {
-    const label = document.createElement('label');
-    label.textContent = `Обʼємна вага місця #${i + 1} *`;
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.step = '0ü
+async function loadParcels() {
+  if (!routeId) {
+    parcelsList.textContent = 'Рейс не вибрано';
+    return;
+  }
+  parcelsList.textContent = 'Завантаження...';
+  const parcelsCol = collection(db, 'parcels');
+  const q = query(parcelsCol, where('routeId', '==', routeId));
+  const snapshot = await getDocs(q);
+  parcelsList.innerHTML = '';
+  if (snapshot.empty) {
+    parcelsList.textContent = 'Посилок поки немає';
+    return;
+  }
+  snapshot.forEach(docSnap => {
+    const p = docSnap.data();
+    const div = document.createElement('div');
+    div.className = 'parcel';
+    div.innerHTML = `
+      <div class="parcel-item">
+        <span class="parcel-number">#${escapeHTML(p.number)} (Вага: ${p.weight} кг)</span>
+        <button class="btn btn-delete" data-id="${docSnap.id}">Видалити</button>
+      </div>
+      <div><b>Місто:</b> ${escapeHTML(p.city)}; <b>Відділення:</b> ${escapeHTML(p.branch)}</div>
+      <div><b>Телефон:</b> ${escapeHTML(p.phone)}; <b>Ціна (€):</b> ${p.price}</div>
+      <div><b>Отримувач:</b> ${escapeHTML(p.recipient || '')}</div>
+      <div><b>Опис:</b> ${escapeHTML(p.desc || '')}</div>
+    `;
+    parcelsList.appendChild(div);
+  });
+  document.querySelectorAll('.btn-delete').forEach(btn => btn.onclick = onDeleteParcel);
+}
+
+function escapeHTML(str = '') {
+  return str.replace(/[&<>"']/g, tag => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  })[tag] || tag);
+}
+
+async function onDeleteParcel(event) {
+  const id = event.target.dataset.id;
+  if (!confirm('Видалити посилку?'))
