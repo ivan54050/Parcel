@@ -2,458 +2,355 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-<title>Посилки з рейсами</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Рейси та посилки</title>
 <style>
   body {
     font-family: Arial, sans-serif;
     max-width: 480px;
-    margin: auto;
+    margin: 0 auto;
     padding: 10px;
-    background: #f5f7fa;
+    background: #f5f5f7;
     color: #222;
   }
   h1, h2 {
     text-align: center;
-    margin-bottom: 10px;
   }
   label {
     display: block;
-    margin-top: 12px;
+    margin-top: 10px;
     font-weight: bold;
   }
-  input, select, textarea, button {
+  input, textarea, select, button {
     width: 100%;
     padding: 8px;
-    margin-top: 4px;
-    box-sizing: border-box;
+    margin-top: 5px;
     border-radius: 5px;
-    border: 1px solid #bbb;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
     font-size: 1rem;
   }
   button {
-    background-color: #007bff;
+    background: #007bff;
     color: white;
     border: none;
     margin-top: 15px;
     cursor: pointer;
   }
   button:hover {
-    background-color: #0056b3;
+    background: #0056b3;
   }
-  .secondary {
-    background-color: #28a745;
-    margin-top: 10px;
+  .secondary-btn {
+    background: #28a745;
   }
-  .list-container {
-    margin-top: 20px;
+  .secondary-btn:hover {
+    background: #1e7e34;
   }
-  .trip-item, .parcel-item {
+  .section {
     background: white;
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 4px rgb(0 0 0 / 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
   }
-  .flex-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .flex-row > div {
-    flex: 1;
-  }
-  .flex-row > div + div {
-    margin-left: 8px;
-  }
-  .small-button {
-    padding: 6px 10px;
-    font-size: 0.85rem;
-    border-radius: 4px;
-  }
-  .small-button.delete {
-    background: #dc3545;
-  }
-  .small-button.edit {
-    background: #ffc107;
-    color: #222;
-  }
-  .volume-inputs label {
+  .volume-weights-container label {
     font-weight: normal;
     margin-top: 8px;
   }
-  .volume-inputs input {
-    margin-top: 4px;
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
   }
-  .hidden {
-    display: none;
+  th, td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    font-size: 0.9rem;
+    text-align: left;
+  }
+  th {
+    background: #007bff;
+    color: white;
+  }
+  .actions button {
+    margin-right: 5px;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    border-radius: 4px;
+  }
+  .actions button.delete {
+    background: #dc3545;
+    border: none;
+    color: white;
+  }
+  @media (max-width: 400px) {
+    input, textarea, select, button {
+      font-size: 0.9rem;
+    }
+    th, td {
+      font-size: 0.8rem;
+    }
   }
 </style>
 </head>
 <body>
 
-<h1>Посилки з рейсами</h1>
+<h1>Рейси та посилки</h1>
 
-<!-- Крок 1: Створення рейсу -->
-<section id="tripSection">
-  <h2>Рейси</h2>
+<div class="section" id="tripSection">
+  <h2>Створити / Вибрати рейс</h2>
   <form id="tripForm">
     <label for="tripName">Назва рейсу *</label>
-    <input id="tripName" type="text" placeholder="Наприклад: Рейс Гамбург 22.07" required />
-    <button type="submit">Додати рейс</button>
+    <input type="text" id="tripName" required placeholder="Наприклад: Рейс 01" autocomplete="off" />
+    <button type="submit">Додати / Обрати рейс</button>
   </form>
+  <div style="margin-top:10px;">
+    <strong>Список рейсів:</strong>
+    <select id="tripSelect" style="margin-top:5px;"></select>
+  </div>
+</div>
 
-  <div id="tripList" class="list-container"></div>
-</section>
-
-<!-- Крок 2: Посилки (приховано поки немає вибору) -->
-<section id="parcelSection" class="hidden">
-  <h2>Посилки для рейсу: <span id="currentTripName"></span></h2>
-
+<div class="section" id="parcelSection" style="display:none;">
+  <h2>Додати посилку до рейсу: <span id="currentTripName"></span></h2>
   <form id="parcelForm">
-    <label for="parcelNumber">Номер посилки *</label>
-    <input id="parcelNumber" type="text" required placeholder="ABC123456789" />
+    <label for="parcelNumber">№ посилки *</label>
+    <input type="text" id="parcelNumber" required autocomplete="off" />
 
     <label for="weight">Вага (кг) *</label>
-    <input id="weight" type="number" step="0.01" min="0" required />
+    <input type="number" id="weight" step="0.01" min="0" required />
 
     <label for="placesCount">Кількість місць *</label>
-    <input id="placesCount" type="number" min="1" step="1" value="1" required />
+    <input type="number" id="placesCount" min="1" value="1" required />
 
-    <div id="volumeWeightsContainer" class="volume-inputs"></div>
+    <div class="volume-weights-container" id="volumeWeightsContainer"></div>
 
-    <label for="receiverName">Отримувач *</label>
-    <input id="receiverName" type="text" required />
+    <label for="receiver">Отримувач *</label>
+    <input type="text" id="receiver" required autocomplete="off" />
 
     <label for="city">Місто *</label>
-    <input id="city" type="text" required />
+    <input type="text" id="city" required autocomplete="off" />
 
     <label for="npBranch">Відділення Нової Пошти *</label>
-    <input id="npBranch" type="text" required />
+    <input type="text" id="npBranch" required autocomplete="off" />
 
     <label for="receiverPhone">Телефон *</label>
-    <input id="receiverPhone" type="text" required />
+    <input type="text" id="receiverPhone" required autocomplete="off" />
 
-    <label for="priceEuro">Вартість (€) *</label>
-    <input id="priceEuro" type="number" step="0.01" min="0" required />
+    <label for="priceEuro">Ціна (€) *</label>
+    <input type="number" id="priceEuro" step="0.01" min="0" required />
 
     <label for="description">Опис</label>
     <textarea id="description" rows="2"></textarea>
 
-    <input type="hidden" id="editingParcelId" value="">
-
     <button type="submit">Додати посилку</button>
   </form>
 
-  <button id="backToTrips" class="secondary">Повернутися до рейсів</button>
-
-  <div id="parcelList" class="list-container"></div>
-</section>
+  <h3>Посилки рейсу</h3>
+  <table id="parcelTable" aria-label="Список посилок рейсу">
+    <thead>
+      <tr>
+        <th>№</th>
+        <th>Вага (кг)</th>
+        <th>Місць</th>
+        <th>Обʼємна вага (кг)</th>
+        <th>Отримувач</th>
+        <th>Місто</th>
+        <th>Відділення НП</th>
+        <th>Телефон</th>
+        <th>Ціна (€)</th>
+        <th>Опис</th>
+        <th>Дії</th>
+      </tr>
+    </thead>
+    <tbody id="parcelListBody"></tbody>
+  </table>
+</div>
 
 <script type="module">
-  // Firebase imports (скрипти можна завантажити в head або тут)
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
   import {
     getFirestore,
     collection,
     addDoc,
     getDocs,
-    doc,
-    updateDoc,
-    deleteDoc,
-    onSnapshot,
     query,
     where,
-  } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-firestore.js";
+    deleteDoc,
+    doc,
+    orderBy
+  } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-  // Firebase config - вставте свої дані
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID",
+    apiKey: "AIzaSyBjLuotxHzCIkSLduDlLb3AYTc6A6A8NYc",
+    authDomain: "parcelapp-900b9.firebaseapp.com",
+    projectId: "parcelapp-900b9",
+    storageBucket: "parcelapp-900b9.firebasestorage.app",
+    messagingSenderId: "310089427450",
+    appId: "1:310089427450:web:302617ae37a9ac6528dc43",
+    measurementId: "G-Q6HK04XH7Y"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // --- DOM Elements ---
-  const tripForm = document.getElementById("tripForm");
-  const tripNameInput = document.getElementById("tripName");
-  const tripListDiv = document.getElementById("tripList");
+  const tripForm = document.getElementById('tripForm');
+  const tripSelect = document.getElementById('tripSelect');
+  const parcelSection = document.getElementById('parcelSection');
+  const currentTripNameSpan = document.getElementById('currentTripName');
+  const parcelForm = document.getElementById('parcelForm');
+  const placesCountInput = document.getElementById('placesCount');
+  const volumeWeightsContainer = document.getElementById('volumeWeightsContainer');
+  const parcelListBody = document.getElementById('parcelListBody');
 
-  const parcelSection = document.getElementById("parcelSection");
-  const currentTripNameSpan = document.getElementById("currentTripName");
-  const parcelForm = document.getElementById("parcelForm");
-  const parcelNumberInput = document.getElementById("parcelNumber");
-  const weightInput = document.getElementById("weight");
-  const placesCountInput = document.getElementById("placesCount");
-  const volumeWeightsContainer = document.getElementById("volumeWeightsContainer");
-  const receiverNameInput = document.getElementById("receiverName");
-  const cityInput = document.getElementById("city");
-  const npBranchInput = document.getElementById("npBranch");
-  const receiverPhoneInput = document.getElementById("receiverPhone");
-  const priceEuroInput = document.getElementById("priceEuro");
-  const descriptionInput = document.getElementById("description");
-  const editingParcelIdInput = document.getElementById("editingParcelId");
-  const parcelListDiv = document.getElementById("parcelList");
-  const backToTripsBtn = document.getElementById("backToTrips");
-
-  // Стан
   let currentTrip = null;
+  let parcels = [];
 
-  // Функція для відображення input-ів об’ємної ваги залежно від кількості місць
-  function updateVolumeInputs() {
-    const count = parseInt(placesCountInput.value) || 1;
-    volumeWeightsContainer.innerHTML = "";
+  // Рендер динамічних полів обʼємної ваги
+  function renderVolumeWeightInputs(count, values = []) {
+    volumeWeightsContainer.innerHTML = '';
     for (let i = 0; i < count; i++) {
-      const label = document.createElement("label");
-      label.textContent = `Об’ємна вага місця #${i + 1} (кг) *`;
-      const input = document.createElement("input");
-      input.type = "number";
-      input.min = "0";
-      input.step = "0.01";
+      const label = document.createElement('label');
+      label.textContent = `Обʼємна вага місця #${i + 1} (кг) *`;
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.step = '0.01';
       input.required = true;
-      input.name = "volumeWeight";
+      input.value = values[i] ?? '';
+      input.name = 'volumeWeight';
       volumeWeightsContainer.appendChild(label);
       volumeWeightsContainer.appendChild(input);
     }
   }
 
-  placesCountInput.addEventListener("input", updateVolumeInputs);
-  updateVolumeInputs();
-
-  // --- Функції для роботи з Firestore ---
-
-  // Додавання рейсу
-  tripForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = tripNameInput.value.trim();
-    if (!name) return alert("Введіть назву рейсу");
-    try {
-      await addDoc(collection(db, "trips"), { name, createdAt: Date.now() });
-      tripNameInput.value = "";
-    } catch (err) {
-      alert("Помилка при додаванні рейсу");
-      console.error(err);
-    }
+  placesCountInput.addEventListener('input', () => {
+    const count = parseInt(placesCountInput.value) || 1;
+    renderVolumeWeightInputs(count);
   });
 
-  // Відображення списку рейсів
-  function renderTrips(trips) {
-    tripListDiv.innerHTML = "";
-    if (trips.length === 0) {
-      tripListDiv.textContent = "Рейсів поки немає";
+  renderVolumeWeightInputs(1);
+
+  // Додавання/вибір рейсу
+  tripForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('tripName').value.trim();
+    if (!name) {
+      alert('Введіть назву рейсу');
       return;
     }
-    trips.forEach(({ id, name }) => {
-      const div = document.createElement("div");
-      div.className = "trip-item flex-row";
 
-      const nameDiv = document.createElement("div");
-      nameDiv.textContent = name;
+    try {
+      const tripsCol = collection(db, 'trips');
+      const q = query(tripsCol, where('name', '==', name));
+      const querySnapshot = await getDocs(q);
 
-      const selectBtn = document.createElement("button");
-      selectBtn.textContent = "Відкрити";
-      selectBtn.className = "small-button";
-      selectBtn.onclick = () => {
-        currentTrip = { id, name };
-        showParcelSection();
-      };
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "Видалити";
-      deleteBtn.className = "small-button delete";
-      deleteBtn.onclick = async () => {
-        if (confirm(`Видалити рейс "${name}"? Це також видалить усі посилки в ньому.`)) {
-          try {
-            // Видалити всі посилки цього рейсу
-            const parcelsSnapshot = await getDocs(query(collection(db, "parcels"), where("tripId", "==", id)));
-            const batch = db.batch ? db.batch() : null; // batch may not be supported in some versions
-            if(batch) {
-              parcelsSnapshot.forEach(docSnap => batch.delete(doc(db, "parcels", docSnap.id)));
-              batch.delete(doc(db, "trips", id));
-              await batch.commit();
-            } else {
-              // Якщо batch неможливий, видалити по черзі
-              for(const docSnap of parcelsSnapshot.docs) {
-                await deleteDoc(doc(db, "parcels", docSnap.id));
-              }
-              await deleteDoc(doc(db, "trips", id));
-            }
-          } catch (e) {
-            alert("Помилка при видаленні");
-            console.error(e);
-          }
-        }
-      };
-
-      div.appendChild(nameDiv);
-      div.appendChild(selectBtn);
-      div.appendChild(deleteBtn);
-
-      tripListDiv.appendChild(div);
-    });
-  }
-
-  // Слухач на колекцію рейсів
-  const tripsCol = collection(db, "trips");
-  onSnapshot(tripsCol, (snapshot) => {
-    const trips = [];
-    snapshot.forEach(doc => trips.push({ id: doc.id, ...doc.data() }));
-    renderTrips(trips);
+      if (querySnapshot.empty) {
+        const docRef = await addDoc(tripsCol, { name, createdAt: new Date().toISOString() });
+        currentTrip = { id: docRef.id, name };
+      } else {
+        const docSnap = querySnapshot.docs[0];
+        currentTrip = { id: docSnap.id, name: docSnap.data().name };
+      }
+      updateUIAfterTripSelect();
+      loadParcels();
+      await loadTrips(); // оновити список
+    } catch (error) {
+      alert('Помилка при додаванні/виборі рейсу: ' + error.message);
+    }
   });
 
-  // --- Робота з посилками ---
-
-  // Показати секцію посилок
-  function showParcelSection() {
+  // Оновлення UI після вибору рейсу
+  function updateUIAfterTripSelect() {
     currentTripNameSpan.textContent = currentTrip.name;
-    parcelSection.classList.remove("hidden");
-    document.getElementById("tripSection").classList.add("hidden");
-    loadParcels();
+    parcelSection.style.display = 'block';
+    tripSelect.value = currentTrip.id;
   }
 
-  // Повернутися до списку рейсів
-  backToTripsBtn.onclick = () => {
-    parcelSection.classList.add("hidden");
-    document.getElementById("tripSection").classList.remove("hidden");
-    currentTrip = null;
-    clearParcelForm();
-    parcelListDiv.innerHTML = "";
-  };
+  // Завантаження рейсів у селект
+  async function loadTrips() {
+    const tripsCol = collection(db, 'trips');
+    const q = query(tripsCol, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    tripSelect.innerHTML = '';
+    querySnapshot.forEach(docSnap => {
+      const option = document.createElement('option');
+      option.value = docSnap.id;
+      option.textContent = docSnap.data().name;
+      tripSelect.appendChild(option);
+    });
+    if (!currentTrip && querySnapshot.docs.length > 0) {
+      const firstTrip = querySnapshot.docs[0];
+      currentTrip = { id: firstTrip.id, name: firstTrip.data().name };
+      updateUIAfterTripSelect();
+      loadParcels();
+    }
+  }
 
-  // Відобразити список посилок для поточного рейсу
+  tripSelect.addEventListener('change', () => {
+    const selectedId = tripSelect.value;
+    if (!selectedId) return;
+    currentTrip = { id: selectedId, name: tripSelect.options[tripSelect.selectedIndex].text };
+    updateUIAfterTripSelect();
+    loadParcels();
+  });
+
+  // Завантаження посилок для поточного рейсу
   async function loadParcels() {
     if (!currentTrip) return;
-    const q = query(collection(db, "parcels"), where("tripId", "==", currentTrip.id));
-    const snapshot = await getDocs(q);
-    const parcels = [];
-    snapshot.forEach(doc => parcels.push({ id: doc.id, ...doc.data() }));
-    renderParcels(parcels);
+    const parcelsCol = collection(db, 'parcels');
+    const q = query(parcelsCol, where('tripId', '==', currentTrip.id));
+    const querySnapshot = await getDocs(q);
+    parcels = [];
+    querySnapshot.forEach(docSnap => {
+      parcels.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    renderParcels();
   }
 
-  function renderParcels(parcels) {
-    parcelListDiv.innerHTML = "";
+  // Рендер посилок в таблицю
+  function renderParcels() {
+    parcelListBody.innerHTML = '';
     if (parcels.length === 0) {
-      parcelListDiv.textContent = "Посилок поки немає";
+      parcelListBody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:10px;">Посилок немає</td></tr>`;
       return;
     }
-
     parcels.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "parcel-item";
-
-      const volumeWeightsStr = p.volumeWeights ? p.volumeWeights.map(w => w.toFixed(2)).join(", ") : "";
-
-      div.innerHTML = `
-        <div><strong>№ посилки:</strong> ${p.number}</div>
-        <div><strong>Вага:</strong> ${p.weight.toFixed(2)} кг</div>
-        <div><strong>Кількість місць:</strong> ${p.placesCount}</div>
-        <div><strong>Об’ємна вага (кг):</strong> ${volumeWeightsStr}</div>
-        <div><strong>Отримувач:</strong> ${p.receiverName}</div>
-        <div><strong>Місто:</strong> ${p.city}</div>
-        <div><strong>Відділення НП:</strong> ${p.npBranch}</div>
-        <div><strong>Телефон:</strong> ${p.receiverPhone}</div>
-        <div><strong>Ціна (€):</strong> ${p.priceEuro.toFixed(2)}</div>
-        <div><strong>Опис:</strong> ${p.description || "-"}</div>
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${p.number}</td>
+        <td>${p.weight.toFixed(2)}</td>
+        <td>${p.placesCount}</td>
+        <td>${p.volumeWeights.map(w => w.toFixed(2)).join(', ')}</td>
+        <td>${p.receiver}</td>
+        <td>${p.city}</td>
+        <td>${p.npBranch}</td>
+        <td>${p.receiverPhone}</td>
+        <td>${p.priceEuro.toFixed(2)}</td>
+        <td>${p.description || ''}</td>
+        <td class="actions">
+          <button class="delete" data-id="${p.id}">Видалити</button>
+        </td>
       `;
-
-      const btnEdit = document.createElement("button");
-      btnEdit.textContent = "Редагувати";
-      btnEdit.className = "small-button edit";
-      btnEdit.onclick = () => fillParcelForm(p);
-
-      const btnDelete = document.createElement("button");
-      btnDelete.textContent = "Видалити";
-      btnDelete.className = "small-button delete";
-      btnDelete.onclick = async () => {
-        if (confirm(`Видалити посилку №${p.number}?`)) {
-          try {
-            await deleteDoc(doc(db, "parcels", p.id));
-            loadParcels();
-          } catch (e) {
-            alert("Помилка при видаленні");
-            console.error(e);
-          }
-        }
-      };
-
-      const actionsDiv = document.createElement("div");
-      actionsDiv.style.marginTop = "8px";
-      actionsDiv.appendChild(btnEdit);
-      actionsDiv.appendChild(btnDelete);
-
-      div.appendChild(actionsDiv);
-      parcelListDiv.appendChild(div);
+      parcelListBody.appendChild(tr);
     });
   }
 
-  // Заповнити форму для редагування посилки
-  function fillParcelForm(parcel) {
-    editingParcelIdInput.value = parcel.id;
-    parcelNumberInput.value = parcel.number;
-    weightInput.value = parcel.weight;
-    placesCountInput.value = parcel.placesCount;
-    updateVolumeInputs();
-    setTimeout(() => {
-      const inputs = volumeWeightsContainer.querySelectorAll('input[name="volumeWeight"]');
-      parcel.volumeWeights.forEach((w, i) => {
-        if (inputs[i]) inputs[i].value = w;
-      });
-    }, 0);
-    receiverNameInput.value = parcel.receiverName;
-    cityInput.value = parcel.city;
-    npBranchInput.value = parcel.npBranch;
-    receiverPhoneInput.value = parcel.receiverPhone;
-    priceEuroInput.value = parcel.priceEuro;
-    descriptionInput.value = parcel.description || "";
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  // Очистити форму посилки
-  function clearParcelForm() {
-    editingParcelIdInput.value = "";
-    parcelForm.reset();
-    updateVolumeInputs();
-  }
-
-  // Додавання/редагування посилки
-  parcelForm.addEventListener("submit", async (e) => {
+  // Додавання посилки
+  parcelForm.addEventListener('submit', async e => {
     e.preventDefault();
-    if (!currentTrip) return alert("Оберіть рейс!");
-
-    const parcelId = editingParcelIdInput.value;
-    const number = parcelNumberInput.value.trim();
-    const weight = parseFloat(weightInput.value);
-    const placesCount = parseInt(placesCountInput.value);
-    const volumeInputs = volumeWeightsContainer.querySelectorAll('input[name="volumeWeight"]');
-    const volumeWeights = Array.from(volumeInputs).map(i => parseFloat(i.value));
-    const receiverName = receiverNameInput.value.trim();
-    const city = cityInput.value.trim();
-    const npBranch = npBranchInput.value.trim();
-    const receiverPhone = receiverPhoneInput.value.trim();
-    const priceEuro = parseFloat(priceEuroInput.value);
-    const description = descriptionInput.value.trim();
-
-    if (volumeWeights.length !== placesCount || volumeWeights.some(isNaN)) {
-      return alert("Заповніть всі обʼємні ваги коректно");
-    }
-    if(!number || !weight || !placesCount || !receiverName || !city || !npBranch || !receiverPhone || isNaN(priceEuro)) {
-      return alert("Будь ласка, заповніть всі обов’язкові поля");
+    if (!currentTrip) {
+      alert('Оберіть рейс');
+      return;
     }
 
-    try {
-      if (parcelId) {
-        // редагування
-        const parcelRef = doc(db, "parcels", parcelId);
-        await updateDoc(parcelRef, {
-          number,
-          weight,
-          placesCount,
-          volumeWeights,
-          receiverName,
-          city,
-         
+    const number = document.getElementById('parcelNumber').value.trim();
+    const weight = parseFloat(document.getElementById('weight').value);
+    const placesCount = parseInt(document.getElementById('placesCount').value);
+    const volumeWeightsInputs = volumeWeightsContainer.querySelectorAll('input[name="volumeWeight"]');
+    const volumeWeights = Array.from(volumeWeightsInputs).map(i => parseFloat(i.value));
+    const receiver = document.getElementById('receiver').value.trim();
+    const city = document.getElementById('city').value.trim();
+    const npBranch = document.getElementById('npBranch').value.trim();
+    const receiverPhone = document.getElementById('receiverPhone').value.trim();
+    const priceEuro = parseFloat(document.getElementById('priceEuro').value);
+    const description =
