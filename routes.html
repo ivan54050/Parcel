@@ -3,103 +3,85 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ParcelApp - Рейси</title>
+<title>Рейси ParcelApp</title>
 <style>
   body {
     font-family: Arial, sans-serif;
     max-width: 480px;
-    margin: 0 auto;
+    margin: 10px auto;
+    background: #f0f0f0;
     padding: 10px;
-    background: #f5f8fa;
-    color: #333;
   }
   h1 {
     text-align: center;
     color: #007bff;
-    margin-bottom: 15px;
   }
-  form, .route-item {
+  form, .route {
     background: white;
-    padding: 15px;
+    padding: 12px;
     margin-bottom: 10px;
-    border-radius: 8px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    border-radius: 6px;
   }
-  input[type="text"] {
+  input[type=text] {
     width: 100%;
     padding: 8px;
-    margin-top: 5px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
     box-sizing: border-box;
+    font-size: 16px;
   }
   button {
-    margin-top: 12px;
-    padding: 12px;
+    margin-top: 8px;
     width: 100%;
-    border: none;
+    padding: 10px;
+    font-size: 16px;
     background: #007bff;
     color: white;
-    font-size: 16px;
+    border: none;
     border-radius: 6px;
     cursor: pointer;
   }
   button:hover {
     background: #0056b3;
   }
-  .btn-small {
-    width: auto;
-    padding: 6px 12px;
-    font-size: 14px;
-    margin-left: 5px;
-    border-radius: 4px;
-  }
-  .btn-edit { background: #28a745; }
-  .btn-delete { background: #dc3545; }
-  .btn-export { background: #17a2b8; margin-bottom: 15px; }
-  .route-header {
+  .route-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
   .route-name {
-    font-weight: 700;
+    font-weight: bold;
     font-size: 18px;
   }
-  a.link-parcels {
-    display: inline-block;
-    margin-top: 10px;
-    color: #007bff;
-    text-decoration: underline;
+  .btn {
+    padding: 6px 10px;
+    margin-left: 6px;
+    border-radius: 4px;
+    border: none;
     cursor: pointer;
+    font-size: 14px;
   }
-  @media (max-width: 480px) {
-    body { padding: 8px; }
-    button { font-size: 14px; }
-  }
+  .btn-edit { background: #28a745; color: white; }
+  .btn-delete { background: #dc3545; color: white; }
+  .btn-parcels { background: #17a2b8; color: white; }
 </style>
 </head>
 <body>
 
 <h1>Рейси ParcelApp</h1>
 
-<form id="formCreateRoute">
-  <label for="routeName">Назва рейсу *</label>
-  <input id="routeName" type="text" placeholder="Введіть назву рейсу" required autocomplete="off" />
+<form id="formAddRoute">
+  <input type="text" id="routeName" placeholder="Нова назва рейсу" required />
   <button type="submit">Додати Рейс</button>
 </form>
 
-<button id="btnExportPDF" class="btn-export">Експорт Рейсів і Посилок у PDF</button>
-
-<div id="routesContainer">
-  <p>Завантаження рейсів...</p>
-</div>
+<div id="routesList">Завантаження...</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
-import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js";
+import {
+  getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
+// Конфіг Firebase - твій!
 const firebaseConfig = {
   apiKey: "AIzaSyBjLuotxHzCIkSLduDlLb3AYTc6A6A8NYc",
   authDomain: "parcelapp-900b9.firebaseapp.com",
@@ -113,207 +95,93 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const formCreateRoute = document.getElementById('formCreateRoute');
-const routesContainer = document.getElementById('routesContainer');
-const btnExportPDF = document.getElementById('btnExportPDF');
-
-let routes = [];
+const formAddRoute = document.getElementById('formAddRoute');
+const routeNameInput = document.getElementById('routeName');
+const routesList = document.getElementById('routesList');
 
 async function loadRoutes() {
-  routesContainer.innerHTML = 'Завантаження рейсів...';
+  routesList.innerHTML = 'Завантаження...';
   const routesCol = collection(db, 'routes');
   const snapshot = await getDocs(routesCol);
-  routes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  renderRoutes();
-}
-
-function renderRoutes() {
-  if (routes.length === 0) {
-    routesContainer.innerHTML = '<p>Рейсів поки немає.</p>';
+  if (snapshot.empty) {
+    routesList.innerHTML = '<p>Рейсів поки немає</p>';
     return;
   }
-  routesContainer.innerHTML = '';
-  routes.forEach(route => {
+  routesList.innerHTML = '';
+  snapshot.forEach(docSnap => {
+    const route = { id: docSnap.id, ...docSnap.data() };
     const div = document.createElement('div');
-    div.classList.add('route-item');
-
+    div.className = 'route';
     div.innerHTML = `
-      <div class="route-header">
-        <span class="route-name" data-id="${route.id}">${escapeHTML(route.name)}</span>
+      <div class="route-item">
+        <span class="route-name">${escapeHTML(route.name)}</span>
         <div>
-          <button class="btn-small btn-edit" data-id="${route.id}">Редагувати</button>
-          <button class="btn-small btn-delete" data-id="${route.id}">Видалити</button>
+          <button class="btn btn-parcels" onclick="location.href='parcels.html?routeId=${route.id}'">Посилки</button>
+          <button class="btn btn-edit" data-id="${route.id}">Редагувати</button>
+          <button class="btn btn-delete" data-id="${route.id}">Видалити</button>
         </div>
       </div>
-      <a href="parcels.html?routeId=${route.id}" class="link-parcels" target="_blank">Переглянути посилки</a>
     `;
-
-    routesContainer.appendChild(div);
+    routesList.appendChild(div);
   });
-
-  // Edit handlers
-  document.querySelectorAll('.btn-edit').forEach(btn => {
-    btn.onclick = () => startEditRoute(btn.dataset.id);
-  });
-
-  // Delete handlers
-  document.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.onclick = () => deleteRoute(btn.dataset.id);
-  });
+  // Додаємо слухачі редагування і видалення
+  document.querySelectorAll('.btn-edit').forEach(btn => btn.onclick = onEditRoute);
+  document.querySelectorAll('.btn-delete').forEach(btn => btn.onclick = onDeleteRoute);
 }
 
-function escapeHTML(text) {
-  return text.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m]);
+function escapeHTML(str) {
+  return str.replace(/[&<>"']/g, tag => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  })[tag] || tag);
 }
 
-async function startEditRoute(id) {
-  const routeDiv = [...routesContainer.children].find(div => div.querySelector(`[data-id="${id}"]`));
-  if (!routeDiv) return;
-
-  const route = routes.find(r => r.id === id);
-  if (!route) return;
-
-  // Hide name, show input
-  const nameSpan = routeDiv.querySelector('.route-name');
-  nameSpan.style.display = 'none';
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.value = route.name;
-  input.style.width = '70%';
-  input.style.padding = '6px';
-  input.style.fontSize = '16px';
-
-  routeDiv.querySelector('.route-header').insertBefore(input, nameSpan);
-
-  // Hide buttons
-  const btnEdit = routeDiv.querySelector('.btn-edit');
-  const btnDelete = routeDiv.querySelector('.btn-delete');
-  btnEdit.style.display = 'none';
-  btnDelete.style.display = 'none';
-
-  const btnSave = document.createElement('button');
-  btnSave.textContent = 'Зберегти';
-  btnSave.className = 'btn-small btn-edit';
-  btnSave.style.backgroundColor = '#28a745';
-  btnSave.style.marginLeft = '5px';
-
-  const btnCancel = document.createElement('button');
-  btnCancel.textContent = 'Відміна';
-  btnCancel.className = 'btn-small btn-delete';
-  btnCancel.style.backgroundColor = '#6c757d';
-
-  btnSave.onclick = async () => {
-    const newName = input.value.trim();
-    if (!newName) return alert('Назва не може бути порожньою');
-    try {
-      await updateDoc(doc(db, 'routes', id), { name: newName });
-      await loadRoutes();
-    } catch (e) {
-      alert('Помилка оновлення: ' + e.message);
-    }
-  };
-
-  btnCancel.onclick = () => {
-    input.remove();
-    nameSpan.style.display = '';
-    btnEdit.style.display = '';
-    btnDelete.style.display = '';
-    btnSave.remove();
-    btnCancel.remove();
-  };
-
-  routeDiv.querySelector('.route-header').appendChild(btnSave);
-  routeDiv.querySelector('.route-header').appendChild(btnCancel);
-}
-
-async function deleteRoute(id) {
-  if (!confirm('Ви впевнені, що хочете видалити цей рейс? Це також видалить усі посилки цього рейсу!')) return;
+async function onEditRoute(event) {
+  const id = event.target.dataset.id;
+  const newName = prompt('Введіть нову назву рейсу');
+  if (!newName) return alert('Назва не може бути пустою');
   try {
-    // Видаляємо всі посилки з цим routeId
+    await updateDoc(doc(db, 'routes', id), { name: newName });
+    await loadRoutes();
+  } catch(e) {
+    alert('Помилка оновлення: ' + e.message);
+  }
+}
+
+async function onDeleteRoute(event) {
+  const id = event.target.dataset.id;
+  if (!confirm('Видалити цей рейс та всі його посилки?')) return;
+  try {
+    // Видалити посилки цього рейсу
     const parcelsCol = collection(db, 'parcels');
     const q = query(parcelsCol, where('routeId', '==', id));
     const parcelsSnap = await getDocs(q);
-    const batchDeletes = parcelsSnap.docs.map(d => deleteDoc(doc(db, 'parcels', d.id)));
-    await Promise.all(batchDeletes);
-
-    // Видаляємо сам рейс
+    const deletes = parcelsSnap.docs.map(docSnap => deleteDoc(doc(db, 'parcels', docSnap.id)));
+    await Promise.all(deletes);
+    // Видалити рейс
     await deleteDoc(doc(db, 'routes', id));
     await loadRoutes();
-  } catch (e) {
+  } catch(e) {
     alert('Помилка видалення: ' + e.message);
   }
 }
 
-btnExportPDF.onclick = async () => {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  doc.setFontSize(18);
-  doc.text('Рейси і Посилки', 10, 20);
-  let y = 30;
-  
-  // Завантажуємо всі рейси і їх посилки
-  for (const route of routes) {
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 150);
-    doc.text(`Рейс: ${route.name}`, 10, y);
-    y += 8;
-
-    // Завантажуємо посилки для цього рейсу
-    const parcelsCol = collection(db, 'parcels');
-    const q = query(parcelsCol, where('routeId', '==', route.id));
-    const parcelsSnap = await getDocs(q);
-
-    if (parcelsSnap.empty) {
-      doc.setFontSize(12);
-      doc.setTextColor(100);
-      doc.text('  Посилок немає', 12, y);
-      y += 8;
-      continue;
-    }
-
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    parcelsSnap.forEach(p => {
-      const parcel = p.data();
-      // Форматуємо рядок з основною інформацією
-      const line = `  №${parcel.number} | Вага: ${parcel.weight} кг | Обʼємна вага: ${parcel.volumes ? parcel.volumes.join(', ') : 'N/A'} | Отримувач: ${parcel.recipient || '—'} | Ціна: €${parcel.price}`;
-      doc.text(line, 12, y);
-      y += 6;
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
-    });
-    y += 8;
-    if (y > 280) {
-      doc.addPage();
-      y = 20;
-    }
-  }
-
-  doc.save('parcel_routes.pdf');
-};
-
-formCreateRoute.onsubmit = async (e) => {
+formAddRoute.onsubmit = async e => {
   e.preventDefault();
-  const name = formCreateRoute.routeName.value.trim();
+  const name = routeNameInput.value.trim();
   if (!name) return alert('Введіть назву рейсу');
   try {
     await addDoc(collection(db, 'routes'), { name });
-    formCreateRoute.reset();
+    routeNameInput.value = '';
     await loadRoutes();
   } catch(e) {
-    alert('Помилка додавання рейсу: ' + e.message);
+    alert('Помилка додавання: ' + e.message);
   }
 };
 
-window.onload = () => {
-  loadRoutes();
-};
+window.onload = loadRoutes;
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script type="module" src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"></script>
+
 </body>
 </html>
