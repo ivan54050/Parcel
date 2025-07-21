@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Посилки</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="trip.js" defer></script>
+</head>
+<body>
+  <h1 id="trip-title">Посилки</h1>
+  <form id="parcel-form">
+    <input type="text" id="parcel-number" placeholder="Номер посилки" required />
+    <input type="number" id="parcel-weight" placeholder="Вага" step="0.01" required />
+    <input type="number" id="parcel-count" placeholder="Кількість місць" min="1" value="1" required />
+    <div id="volume-inputs"></div>
+    <input type="text" id="parcel-city" placeholder="Місто" required />
+    <input type="text" id="parcel-branch" placeholder="Відділення" required />
+    <input type="text" id="parcel-phone" placeholder="Телефон" required />
+    <input type="number" id="parcel-price" placeholder="Ціна (€)" step="0.01" required />
+    <input type="text" id="parcel-recipient" placeholder="Отримувач" />
+    <textarea id="parcel-desc" placeholder="Опис"></textarea>
+    <button type="submit">Додати посилку</button>
+  </form>
+  <ul id="parcel-list"></ul>
+  <button id="export-pdf">Експортувати PDF</button>
+</body>
+</html>
