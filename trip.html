@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Посилки</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 1rem; background: #f1f1f1; max-width: 480px; margin: auto; }
+    input, textarea, button { width: 100%; margin-top: 0.5rem; padding: 0.5rem; box-sizing: border-box; }
+    .parcel { background: white; padding: 1rem; margin-top: 1rem; border-radius: 8px; }
+    .volume-list { margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <h2>Нова посилка</h2>
+  <form id="form">
+    <input id="receiver" placeholder="Отримувач" required />
+    <input id="number" placeholder="Номер посилки" required />
+    <input id="weight" placeholder="Вага (кг)" type="number" required />
+    <input id="count" placeholder="Кількість місць" type="number" value="1" required />
+    <div id="volumes" class="volume-list"></div>
+    <input id="city" placeholder="Місто" required />
+    <input id="branch" placeholder="Відділення НП" required />
+    <input id="phone" placeholder="Телефон" required />
+    <input id="price" placeholder="Ціна (€)" type="number" required />
+    <textarea id="desc" placeholder="Опис"></textarea>
+    <button type="submit">Зберегти</button>
+    <button type="button" onclick="exportPDF()">📄 Експорт PDF</button>
+  </form>
+
+  <h3>Посилки</h3>
+  <div id="parcels"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+    import jsPDF from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjLuotxHzCIkSLduDlLb3AYTc6A6A8NYc",
+      authDomain: "parcelapp-900b9.firebaseapp.com",
+      projectId: "parcelapp-900b9",
+      storageBucket: "parcelapp-900b9.firebasestorage.app",
+      messagingSenderId: "310089427450",
+      appId: "1:310089427450:web:7cf3dc742c313d0f28dc43",
+      measurementId: "G-X33ZE00CYT"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const urlParams = new URLSearchParams(location.search);
+    const tripId = urlParams.get('tripId');
+
+    const countInput = document.getElementById('count');
+    const volumesDiv = document.getElementById('volumes');
+
+    function renderVolumeInputs(count) {
+      volumesDiv.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.placeholder = `Обʼємна вага #${i + 1}`;
+        input.className = 'volume';
+        volumesDiv.appendChild(input);
+      }
+    }
+
+    countInput.addEventListener('input', () => {
+      renderVolumeInputs(parseInt(countInput.value) || 1);
+    });
+
+    renderVolumeInputs(1);
+
+    document.getElementById('form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const data = {
+        tripId,
+        receiver: document.getElementById('receiver').value,
+        number: document.getElementById('number').value,
+        weight: parseFloat(document.getElementById('weight').value),
+        count: parseInt(document.getElementById('count').value),
+        volumes: Array.from(document.getElementsByClassName('volume')).map(v => parseFloat(v.value)),
+        city: document.getElementById('city').value,
+        branch: document.getElementById('branch').value,
+        phone: document.getElementById('phone').value,
+        price: parseFloat(document.getElementById('price').value),
+        desc: document.getElementById('desc').value,
+        createdAt: new Date().toISOString()
+      };
+      await addDoc(collection(db, 'parcels'), data);
+      alert("Збережено");
+      loadParcels();
+      e.target.reset();
+      renderVolumeInputs(1);
+    });
+
+    async function loadParcels() {
+      const q = query(collection(db, "parcels"), where("tripId", "==", tripId));
+      const snaps = await getDocs(q);
+      const container = document.getElementById('parcels');
+      container.innerHTML = '';
+      snaps.forEach(docSnap => {
+        const p = docSnap.data();
+        const div = document.createElement('div');
+        div.className = 'parcel';
+        div.innerHTML = `
+          <b>${p.number}</b><br/>
+          Отримувач: ${p.receiver}<br/>
+          Місто: ${p.city}, НП: ${p.branch}<br/>
+          Вага: ${p.weight} кг<br/>
+          Обʼємна вага: ${p.volumes.join(', ')}<br/>
+          Ціна: €${p.price}<br/>
+          Опис: ${p.desc}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const q = query(collection(db, "parcels"), where("tripId", "==", tripId));
+      const snaps = await getDocs(q);
+      let y = 10;
+      snaps.forEach((snap, i) => {
+        const p = snap.data();
+        doc.text(`Посилка ${i + 1}: ${p.number}`, 10, y); y += 8;
+        doc.text(`Отримувач: ${p.receiver}`, 10, y); y += 8;
+        doc.text(`Місто: ${p.city}, НП: ${p.branch}`, 10, y); y += 8;
+        doc.text(`Вага: ${p.weight} кг`, 10, y); y += 8;
+        doc.text(`Обʼємна вага: ${p.volumes.join(', ')}`, 10, y); y += 8;
+        doc.text(`Ціна: €${p.price}`, 10, y); y += 8;
+        doc.text(`Опис: ${p.desc}`, 10, y); y += 10;
+      });
+      doc.save("parcels.pdf");
+    }
+
+    loadParcels();
+  </script>
+</body>
+</html>

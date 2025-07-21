@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Рейси</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 1rem; background: #f9f9f9; max-width: 480px; margin: auto; }
+    h1 { text-align: center; }
+    input, button { width: 100%; padding: 0.5rem; margin-top: 0.5rem; box-sizing: border-box; }
+    .trip { background: white; margin-top: 1rem; padding: 1rem; border-radius: 8px; }
+    .trip a { display: block; margin-top: 0.5rem; color: #007bff; text-decoration: none; }
+    .trip a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>Рейси</h1>
+  <input type="text" id="tripName" placeholder="Назва рейсу" />
+  <button onclick="createTrip()">Створити рейс</button>
+  <div id="trips"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjLuotxHzCIkSLduDlLb3AYTc6A6A8NYc",
+      authDomain: "parcelapp-900b9.firebaseapp.com",
+      projectId: "parcelapp-900b9",
+      storageBucket: "parcelapp-900b9.firebasestorage.app",
+      messagingSenderId: "310089427450",
+      appId: "1:310089427450:web:7cf3dc742c313d0f28dc43",
+      measurementId: "G-X33ZE00CYT"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function createTrip() {
+      const name = document.getElementById('tripName').value.trim();
+      if (!name) return alert('Введіть назву рейсу');
+      await addDoc(collection(db, 'trips'), { name, createdAt: new Date() });
+      location.reload();
+    }
+
+    async function loadTrips() {
+      const trips = await getDocs(collection(db, 'trips'));
+      const container = document.getElementById('trips');
+      trips.forEach(docSnap => {
+        const t = docSnap.data();
+        const el = document.createElement('div');
+        el.className = 'trip';
+        el.innerHTML = `<strong>${t.name}</strong>
+          <a href="trip.html?tripId=${docSnap.id}">Переглянути</a>
+          <button onclick="deleteTrip('${docSnap.id}')">❌ Видалити</button>`;
+        container.appendChild(el);
+      });
+    }
+
+    async function deleteTrip(id) {
+      if (confirm("Ви впевнені, що хочете видалити цей рейс?")) {
+        await deleteDoc(doc(db, "trips", id));
+        location.reload();
+      }
+    }
+
+    loadTrips();
+  </script>
+</body>
+</html>
