@@ -2,26 +2,29 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Посилки</title>
+  <title>Посилки рейсу</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1 id="tripTitle">Посилки для рейсу</h1>
+  <h1>Посилки</h1>
   <form id="parcelForm">
-    <input type="text" id="number" placeholder="Номер посилки" required />
-    <input type="number" id="weight" placeholder="Вага (кг)" required />
-    <input type="text" id="receiver" placeholder="Отримувач" required />
-    <input type="text" id="city" placeholder="Місто" required />
-    <input type="text" id="branch" placeholder="Відділення НП" required />
-    <input type="number" id="count" placeholder="Кількість місць" required />
-    <input type="number" id="price" placeholder="Ціна (€)" required />
+    <input id="number" placeholder="Номер" required />
+    <input id="weight" type="number" step="0.01" placeholder="Вага" required />
+    <input id="places" type="number" min="1" value="1" required />
+    <input id="city" placeholder="Місто" required />
+    <input id="branch" placeholder="Відділення НП" required />
+    <input id="phone" placeholder="Телефон" required />
+    <input id="price" type="number" step="0.01" placeholder="€" required />
+    <input id="receiver" placeholder="Отримувач" required />
     <textarea id="desc" placeholder="Опис"></textarea>
-    <button type="submit">Додати посилку</button>
+    <div id="volumeContainer"></div>
+    <button type="submit">Додати</button>
   </form>
+
   <ul id="parcelList"></ul>
-  <button id="backBtn">Назад до рейсів</button>
-  <script type="module" src="firebase.js"></script>
-  <script type="module" src="trip.js"></script>
+  <button id="downloadPdf">Експорт PDF</button>
+
+  <script type="module" src="./js/parcels.js"></script>
 </body>
 </html>
