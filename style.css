@@ -1,25 +1,19 @@
-
 body {
   font-family: sans-serif;
   padding: 10px;
   max-width: 480px;
   margin: auto;
-  background: #f9f9f9;
 }
-h1 {
-  text-align: center;
-}
-form {
-  margin-bottom: 20px;
-}
-input, textarea, button {
+input, textarea {
   width: 100%;
-  padding: 10px;
-  margin-top: 8px;
-  margin-bottom: 10px;
+  padding: 8px;
+  margin: 5px 0;
   box-sizing: border-box;
 }
 button {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
   background: #007bff;
   color: white;
   border: none;
@@ -28,13 +22,5 @@ button {
 button:hover {
   background: #0056b3;
 }
-ul {
-  list-style: none;
-  padding: 0;
-}
-li {
-  background: #fff;
-  padding: 10px;
-  margin-bottom: 5px;
-  border-radius: 4px;
-}
+ul { padding-left: 0; }
+li { list-style: none; margin: 5px 0; background: #eee; padding: 8px; border-radius: 4px; }
