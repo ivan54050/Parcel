@@ -2,110 +2,18 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Керування рейсами</title>
-  <style>
-    /* Мобільна адаптація */
-    body { font-family:sans-serif; max-width:480px; margin:0 auto; padding:10px; background:#f7f7f7; }
-    h1 { text-align:center; }
-    form, ul { background:#fff; border-radius:8px; padding:12px; box-shadow:0 1px 5px rgba(0,0,0,0.1); margin-bottom:15px; }
-    label, input { display:block; width:100%; }
-    label { margin-top:8px; font-weight:600; }
-    input { padding:8px; margin-top:4px; border:1px solid #ccc; border-radius:4px; }
-    button { width:100%; padding:10px; margin-top:12px; background:#007bff; color:#fff; border:none; border-radius:5px; font-size:16px; }
-    button:hover { background:#0056b3; }
-    li { list-style:none; padding:10px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between; }
-    li:last-child { border-bottom:none; }
-    .btn-inline { margin-left:6px; padding:4px 8px; font-size:14px; border:none; border-radius:4px; cursor:pointer; }
-    .btn-edit { background:#28a745; color:#fff; }
-    .btn-delete { background:#e74c3c; color:#fff; }
-    .btn-view { background:#6c757d; color:#fff; }
-  </style>
+  <title>Рейси</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Рейси</h1>
-
+  <h1>Список рейсів</h1>
   <form id="tripForm">
-    <input type="hidden" id="editTripId" />
-    <label for="tripName">Назва рейсу *</label>
-    <input type="text" id="tripName" required placeholder="Назва рейсу" />
-    <button type="submit">Додати / Оновити</button>
+    <input id="tripName" placeholder="Назва рейсу" required />
+    <button type="submit">Додати рейс</button>
   </form>
-
   <ul id="tripList"></ul>
 
-  <script>
-    const tripsKey = 'trips';
-    let trips = JSON.parse(localStorage.getItem(tripsKey) || '[]');
-
-    const tripForm = document.getElementById('tripForm');
-    const tripName = document.getElementById('tripName');
-    const editTripId = document.getElementById('editTripId');
-    const tripList = document.getElementById('tripList');
-
-    function saveTrips() {
-      localStorage.setItem(tripsKey, JSON.stringify(trips));
-    }
-
-    function renderTrips() {
-      tripList.innerHTML = '';
-      if (!trips.length) {
-        tripList.innerHTML = '<li>Рейси ще не створено.</li>';
-        return;
-      }
-      trips.forEach((t, idx) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <span>${t.name}</span>
-          <div>
-            <button class="btn-inline btn-view" data-action="view" data-index="${idx}">🗺 Посилки</button>
-            <button class="btn-inline btn-edit" data-action="edit" data-index="${idx}">✏️ Редагувати</button>
-            <button class="btn-inline btn-delete" data-action="delete" data-index="${idx}">🗑 Видалити</button>
-          </div>`;
-        tripList.appendChild(li);
-      });
-    }
-
-    tripForm.addEventListener('submit', e => {
-      e.preventDefault();
-      const name = tripName.value.trim();
-      if (!name) return alert('Вкажи назву рейсу');
-      const idx = editTripId.value;
-
-      if (idx === '') {
-        trips.push({ name, createdAt: new Date().toISOString() });
-      } else {
-        trips[idx].name = name;
-      }
-      saveTrips();
-      renderTrips();
-      tripForm.reset();
-      editTripId.value = '';
-    });
-
-    tripList.addEventListener('click', e => {
-      const btn = e.target;
-      const idx = btn.dataset.index;
-      if (!idx) return;
-
-      if (btn.dataset.action === 'edit') {
-        tripName.value = trips[idx].name;
-        editTripId.value = idx;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-      if (btn.dataset.action === 'delete') {
-        if (confirm('Видалити рейс?')) {
-          trips.splice(idx,1);
-          saveTrips();
-          renderTrips();
-        }
-      }
-      if (btn.dataset.action === 'view') {
-        window.location.href = `trip.html?tripId=${idx}`;
-      }
-    });
-
-    renderTrips();
-  </script>
+  <script type="module" src="./js/trips.js"></script>
 </body>
 </html>
