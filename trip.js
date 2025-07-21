@@ -1,44 +1,34 @@
-import { db } from './firebase.js';
-import { collection, addDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { db } from "../firebase.js";
+import { collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-const tripId = localStorage.getItem('tripId');
-const tripName = localStorage.getItem('tripName');
-document.getElementById('tripTitle').textContent = `Посилки: ${tripName}`;
+const tripForm = document.getElementById("tripForm");
+const tripName = document.getElementById("tripName");
+const tripList = document.getElementById("tripList");
 
-const form = document.getElementById('parcelForm');
-const list = document.getElementById('parcelList');
-
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const data = {
-    number: document.getElementById('number').value,
-    weight: parseFloat(document.getElementById('weight').value),
-    receiver: document.getElementById('receiver').value,
-    city: document.getElementById('city').value,
-    branch: document.getElementById('branch').value,
-    count: parseInt(document.getElementById('count').value),
-    price: parseFloat(document.getElementById('price').value),
-    desc: document.getElementById('desc').value,
-    tripId,
-    createdAt: new Date().toISOString()
-  };
-  await addDoc(collection(db, 'parcels'), data);
-  form.reset();
-});
-
-onSnapshot(query(collection(db, 'parcels'), where('tripId', '==', tripId)), (snapshot) => {
-  list.innerHTML = '';
-  snapshot.forEach(docSnap => {
-    const p = docSnap.data();
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <strong>${p.number}</strong> (${p.weight} кг) — ${p.city}<br>
-      Отримувач: ${p.receiver} | €${p.price.toFixed(2)}
-    `;
-    list.appendChild(li);
+async function loadTrips() {
+  const trips = await getDocs(collection(db, "trips"));
+  tripList.innerHTML = "";
+  trips.forEach(docSnap => {
+    const data = docSnap.data();
+    const li = document.createElement("li");
+    li.innerHTML = `<a href="trip.html?tripId=${docSnap.id}">${data.name}</a> 
+                    <button onclick="deleteTrip('${docSnap.id}')">🗑️</button>`;
+    tripList.appendChild(li);
   });
-});
+}
 
-document.getElementById('backBtn').onclick = () => {
-  window.location.href = 'index.html';
+window.deleteTrip = async function(id) {
+  if (confirm("Видалити рейс?")) {
+    await deleteDoc(doc(db, "trips", id));
+    loadTrips();
+  }
+}
+
+tripForm.onsubmit = async (e) => {
+  e.preventDefault();
+  await addDoc(collection(db, "trips"), { name: tripName.value, created: new Date() });
+  tripName.value = "";
+  loadTrips();
 };
+
+loadTrips();
